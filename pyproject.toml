@@ -1,0 +1,28 @@
+[project]
+name = "spacecraft-belief-reachability"
+version = "0.1.0"
+description = "Belief-space reachability analysis for spacecraft"
+readme = "README.md"
+authors = [
+    { name = "Grace Kim", email = "gracek1459@gmail.com" }
+]
+requires-python = ">=3.14"
+dependencies = [
+    "brahe>=1.8.0",
+    "ipykernel>=7.4.0",
+    "jupyter>=1.1.1",
+    "matplotlib>=3.11.2",
+    "numpy>=2.5.4",
+    "scipy>=1.18.1",
+]
+
+[build-system]
+requires = ["uv_build>=0.12.23,<0.13.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "pytest-cov>=7.1.0",
+    "ruff>=0.17.2",
+]
