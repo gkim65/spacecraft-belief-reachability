@@ -2,7 +2,9 @@
 
 from spacecraft_belief_reachability.simulation.scenario import (
     ClosestApproach,
-    CrossingConjunction,
+    ConjunctionScenario,
+    DebrisOrbit,
+    ObjectParams,
 )
 
-__all__ = ["ClosestApproach", "CrossingConjunction"]
+__all__ = ["ClosestApproach", "ConjunctionScenario", "DebrisOrbit", "ObjectParams"]

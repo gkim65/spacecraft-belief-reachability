@@ -33,37 +33,69 @@ src/spacecraft_belief_reachability/
     dynamics/        relative-motion models
     estimation/      state estimation and belief propagation
     reachability/    p_reach computation and CBF interface
-    utils/           shared helpers (figure styling)
+    plotting.py      figure styling and scenario plots
+    utils/           shared helpers
 notebooks/           exploratory analysis
 scripts/             runnable entry points
 tests/               pytest suite
 ```
 
-## Current scenario: `CrossingConjunction`
+## Conjunction scenarios
 
-`simulation.scenario.CrossingConjunction` is a LEO crossing conjunction.
+`simulation.ConjunctionScenario` generates a conjunction from a few parameters:
 
-- **Spacecraft:** circular orbit at 550 km altitude, 51.6° inclination.
-- **Debris:** also circular at 550 km. Its plane is offset by 5° in RAAN and 3° in
-  inclination.
-- **Phasing:** the debris starting phase is solved numerically. It places a
-  closest approach of about 750 m roughly 24 h after the start epoch.
-- **Propagation:** brahe's `NumericalOrbitPropagator` with 20×20 EGM2008 gravity
-  (`ForceModelConfig.earth_gravity()`).
-- **Relative states:** expressed in the spacecraft's RTN frame via
-  `brahe.state_eci_to_rtn`.
+- **Spacecraft:** starts on a circular orbit, 550 km altitude and 51.6° inclination
+  by default.
+- **Debris:** specified by a `DebrisOrbit` (inclination, RAAN offset, and optionally
+  eccentricity and semi-major axis).
+- **Encounter:** a target TCA (default about 24 h after the start) and a target
+  miss distance (default 750 m).
+
+The generator finds where the spacecraft crosses the debris plane near the target
+TCA. It places the debris there, offset by the miss distance, and propagates it
+backward to the start epoch. TCA and miss therefore land where requested for any
+orbit shape.
+
+Both objects use brahe's `NumericalOrbitPropagator` with `ForceModelConfig.leo_default()`:
+30×30 gravity, NRLMSISE-00 drag, solar radiation pressure, and Sun and Moon
+gravity. The spacecraft and debris have different area-to-mass ratios, so drag
+acts on them differently. Relative states are in the spacecraft's RTN frame via
+`brahe.state_eci_to_rtn`.
+
+Three presets come built in:
+
+| Preset | Debris orbit | Relative speed | Other close passes |
+|---|---|---|---|
+| `crossing()` | circular, +3° inclination, +5° RAAN | ~0.7 km/s | yes, ~13 km, every half orbit |
+| `high_angle()` | circular, 97.6° inclination, +30° RAAN | ~6.9 km/s | yes, ~19 km |
+| `eccentric_debris()` | 450 × 850 km, crossing plane as `crossing()` | ~0.7 km/s | no, next pass ~290 km |
+
+With circular debris both orbits have the same period, so the two objects meet
+again near the plane crossings every half orbit. Eccentric debris has a different
+period, which makes the encounter isolated.
 
 ```python
-from spacecraft_belief_reachability.simulation import CrossingConjunction
-from spacecraft_belief_reachability.utils.plotting import save_figure
+from spacecraft_belief_reachability.simulation import ConjunctionScenario, DebrisOrbit
+from spacecraft_belief_reachability.plotting import plot_conjunction, save_figure
 
-scenario = CrossingConjunction()          # ~10-15 s: propagates and phases both objects
+scenario = ConjunctionScenario.eccentric_debris()  # ~6 s: propagates both objects
 tca = scenario.find_tca()
 print(f"TCA {tca.t_s / 3600:.2f} h, miss {tca.miss_m:.0f} m")
+print(len(scenario.close_approaches(max_range_m=100e3)), "pass(es) within 100 km")
 
-fig = scenario.plot_conjunction(theme="light")   # or theme="dark" for slides
-save_figure(fig, "figures/crossing_conjunction") # writes PDF, SVG and PNG
+fig = plot_conjunction(scenario, tca=tca, theme="light")  # or theme="dark" for slides
+save_figure(fig, "figures/eccentric_debris")  # writes PDF, SVG and PNG
+
+# A custom conjunction: polar debris, 200 m miss, TCA 12 h after the start
+custom = ConjunctionScenario(
+    DebrisOrbit(inclination_deg=90.0, raan_offset_deg=45.0),
+    target_miss_m=200.0,
+    target_tca_s=12 * 3600.0,
+)
 ```
+
+`notebooks/01_conjunction_scenarios.ipynb` plots all three presets. It is committed
+without outputs, so run it locally to see the figures.
 
 ## Setup
 
@@ -75,6 +107,7 @@ uv run pytest           # run the test suite
 uv run ruff check .     # lint
 ```
 
-Running brahe needs Earth orientation parameter (EOP) data. On import, the
-simulation module calls `brahe.initialize_eop()`. That call downloads the data on
-first use and caches it under `~/.cache/brahe/`.
+Running brahe needs Earth orientation parameter (EOP) and space-weather data. On
+import, the simulation module calls `brahe.initialize_eop()` and
+`brahe.initialize_sw()`, which download the data on first use and cache it under
+`~/.cache/brahe/`.
