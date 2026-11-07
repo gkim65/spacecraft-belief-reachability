@@ -9,11 +9,19 @@ authors = [
 requires-python = ">=3.14"
 dependencies = [
     "brahe>=1.8.0",
+    "hj-reachability>=0.7.0",
     "ipykernel>=7.4.0",
+    "jax>=0.12",
     "jupyter>=1.1.1",
     "matplotlib>=3.11.2",
     "numpy>=2.5.4",
     "scipy>=1.18.1",
+    "tqdm>=4.70.1",
+]
+
+[project.optional-dependencies]
+cuda = [
+    "jax[cuda12]>=0.12",
 ]
 
 [build-system]
@@ -26,3 +34,8 @@ dev = [
     "pytest-cov>=7.1.0",
     "ruff>=0.17.2",
 ]
+
+[tool.uv.sources]
+# Vendored copy of hj_reachability (upstream 0.7.0, MIT), editable so local
+# modifications are picked up and shared through git.
+hj-reachability = { path = "libraries/hj_reachability", editable = true }
