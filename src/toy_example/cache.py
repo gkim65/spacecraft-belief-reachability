@@ -6,9 +6,9 @@ from pathlib import Path
 import numpy as np
 
 
-def save(path: Path, arrays: dict[str, np.ndarray], meta: dict) -> Path:
+def save(path: Path, arrays: dict[str, np.ndarray], meta: dict, compress: bool = True) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
-    np.savez_compressed(path, **arrays)
+    (np.savez_compressed if compress else np.savez)(path, **arrays)
     path.with_suffix(".json").write_text(json.dumps(meta, indent=2, default=str))
     return path
 
