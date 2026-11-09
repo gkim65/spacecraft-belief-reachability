@@ -1,4 +1,4 @@
-"""Initial states from rover-core config/simulations.yaml (RoverDark default)."""
+"""Initial states per scenario. rover_dark: rover-core config/simulations.yaml (RoverDark default)."""
 
 import numpy as np
 
@@ -12,3 +12,16 @@ ROVER_DARK = np.array(
         [9.60, 2.30, 0.00],
     ]
 )
+
+ONE_OBSTACLE = np.array(
+    [
+        [3.00, 0.00, 0.00],
+        [3.00, 1.00, 0.00],
+        [3.00, -1.00, 0.00],
+        [6.00, 0.50, 0.00],
+        [6.00, -0.50, 0.00],
+        [7.50, 0.00, 0.00],
+    ]
+)
+
+INITIAL_STATES = {"rover_dark": ROVER_DARK, "one_obstacle": ONE_OBSTACLE}

@@ -24,6 +24,8 @@ ROVER_DARK_OBSTACLES = (
     Circle(18.5, 1.5, 0.4),
 )
 
+ONE_OBSTACLE = (Circle(10.0, 0.0, 1.0),)
+
 
 @dataclass(frozen=True)
 class SystemConfig:
@@ -70,9 +72,19 @@ class Config:
         return asdict(self)
 
 
-def rover_dark(resolution: tuple[int, int, int] = (100, 100, 100), tag: str | None = None) -> Config:
-    tag = tag or ("rover_dark" if resolution == (100, 100, 100) else "rover_dark_" + "x".join(map(str, resolution)))
-    return Config(tag=tag, grid=GridConfig(resolution))
+def _tag(name: str, resolution: tuple[int, int, int]) -> str:
+    return name if resolution == (100, 100, 100) else f"{name}_" + "x".join(map(str, resolution))
+
+
+def rover_dark(resolution: tuple[int, int, int] = (100, 100, 100)) -> Config:
+    return Config(tag=_tag("rover_dark", resolution), grid=GridConfig(resolution))
+
+
+def one_obstacle(resolution: tuple[int, int, int] = (100, 100, 100)) -> Config:
+    return Config(tag=_tag("one_obstacle", resolution), system=SystemConfig(obstacles=ONE_OBSTACLE), grid=GridConfig(resolution))
+
+
+SCENARIOS = {"rover_dark": rover_dark, "one_obstacle": one_obstacle}
 
 
 def nominal(cfg: Config) -> Config:
