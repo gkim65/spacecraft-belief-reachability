@@ -35,10 +35,6 @@ class GridSet:
     def shape(self) -> tuple[int, int, int]:
         return self.lower.shape
 
-    def bounds(self, states: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-        i = nearest_indices(self.axes, states)
-        return self.lower[i[..., 0], i[..., 1], i[..., 2]], self.upper[i[..., 0], i[..., 1], i[..., 2]]
-
     def extremizer_state(self, states: np.ndarray, use_upper: np.ndarray) -> np.ndarray:
         """Grid node whose control attains the chosen bound at the node nearest each state."""
         i = nearest_indices(self.axes, states)
@@ -87,7 +83,7 @@ def _box_extremum(values, tables, is_min):
 
 
 def path(cfg: Config) -> Path:
-    return cfg.output_dir / "grid_set.npz"
+    return cfg.cache_dir / "grid_set.npz"
 
 
 def build(cfg: Config, grid_input: GridInput) -> GridSet:

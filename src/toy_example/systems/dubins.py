@@ -1,4 +1,4 @@
-"""RoverDark Dubins car: dynamics, failure function and perception-error bounds."""
+"""Dubins car: dynamics, failure function and perception-error bounds."""
 
 import numpy as np
 
@@ -15,10 +15,6 @@ def failure(state: np.ndarray, sys: SystemConfig) -> np.ndarray:
     xy = state[..., :2]
     dists = [np.hypot(xy[..., 0] - o.cx, xy[..., 1] - o.cy) - o.radius for o in sys.obstacles]
     return np.min(np.stack(dists), axis=0)
-
-
-def goal_distance(state: np.ndarray, sys: SystemConfig) -> np.ndarray:
-    return np.hypot(state[..., 0] - sys.goal[0], state[..., 1] - sys.goal[1])
 
 
 def error_limits(sys: SystemConfig) -> tuple[np.ndarray, np.ndarray]:

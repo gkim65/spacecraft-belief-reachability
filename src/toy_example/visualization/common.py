@@ -1,11 +1,11 @@
-"""Shared plotting helpers: scene drawing, heading triangles, figure saving."""
+"""Shared plotting helpers: scene drawing, heading arrows, figure saving."""
 
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.patches import Circle as CirclePatch
-from matplotlib.patches import Polygon
+from matplotlib.patches import FancyArrowPatch
 
 from toy_example.config import Config, SystemConfig
 
@@ -29,15 +29,13 @@ def draw_scene(ax: plt.Axes, sys: SystemConfig, fill: bool = True) -> None:
     for o in sys.obstacles:
         ax.add_patch(CirclePatch((o.cx, o.cy), o.radius, edgecolor="tab:red",
                                  facecolor="tab:red" if fill else "none", alpha=0.3 if fill else 0.9, zorder=5))
-    ax.plot(*sys.goal, marker="*", color="tab:green", markersize=14, zorder=6, label="goal")
+    ax.plot(*sys.goal, marker="*", color="tab:green", markersize=14, zorder=6)
 
 
-def heading_triangle(x: float, y: float, theta: float, size: float = 0.5, **kwargs) -> Polygon:
-    """Isosceles triangle centred at (x, y) pointing along theta."""
-    local = size * np.array([[1.0, 0.0], [-0.6, 0.5], [-0.6, -0.5]])
-    c, s = np.cos(theta), np.sin(theta)
-    pts = local @ np.array([[c, s], [-s, c]]) + [x, y]
-    return Polygon(pts, closed=True, **kwargs)
+def heading_arrow(x: float, y: float, theta: float, length: float = 0.75, **kwargs) -> FancyArrowPatch:
+    """Arrow from (x, y) along theta (rover-core render style)."""
+    end = (x + length * np.cos(theta), y + length * np.sin(theta))
+    return FancyArrowPatch((x, y), end, mutation_scale=10, **kwargs)
 
 
 def theta_label(theta: float) -> str:

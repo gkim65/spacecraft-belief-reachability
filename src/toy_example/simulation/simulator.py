@@ -39,10 +39,8 @@ def simulate(
     player: Player,
     initial_states: np.ndarray,
     dt: float = 0.01,
-    duration: float | None = None,
 ) -> Rollout:
-    duration = sys.time_horizon if duration is None else duration
-    steps = int(round(duration / dt))
+    steps = int(round(sys.time_horizon / dt))
     e_lo, e_hi = error_limits(sys)
     s_lo, s_hi = np.array(sys.state_lo), np.array(sys.state_hi)
     omega_max = sys.omega_max

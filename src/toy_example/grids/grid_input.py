@@ -23,7 +23,7 @@ class GridInput:
 
 
 def path(cfg: Config) -> Path:
-    return cfg.output_dir / "grid_input.npz"
+    return cfg.cache_dir / "grid_input.npz"
 
 
 def build(cfg: Config) -> GridInput:

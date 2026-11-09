@@ -15,8 +15,16 @@ def save(path: Path, arrays: dict[str, np.ndarray], meta: dict, compress: bool =
 
 def load(path: Path) -> tuple[dict[str, np.ndarray], dict]:
     if not path.exists():
-        raise FileNotFoundError(f"{path} not found; run the corresponding build script first.")
+        raise FileNotFoundError(f"{path} not found; run the notebook to build it.")
     with np.load(path) as data:
         arrays = {k: data[k] for k in data.files}
     meta = json.loads(path.with_suffix(".json").read_text())
     return arrays, meta
+
+
+def is_current(path: Path, config: dict) -> bool:
+    """True if a cached result exists and was built with this config."""
+    if not path.exists():
+        return False
+    meta = json.loads(path.with_suffix(".json").read_text())
+    return meta.get("config") == json.loads(json.dumps(config, default=str))

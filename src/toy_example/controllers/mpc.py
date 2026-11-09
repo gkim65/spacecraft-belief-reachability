@@ -5,12 +5,17 @@ previous solve, and the rterm penalizes the change from the previous control.
 """
 
 import multiprocessing as mp
+import warnings
+
+warnings.filterwarnings("ignore", message="The .* feature is not available", module="do_mpc")
 
 import casadi as ca
 import do_mpc
 import numpy as np
 
 from toy_example.config import Circle, MPCConfig, SystemConfig
+
+ca.GlobalOptions.setNumpyMode(-1)  # keep casadi's legacy numpy behaviour without the FutureWarning
 
 
 def effective_margin(mpc_cfg: MPCConfig, sys: SystemConfig) -> float:

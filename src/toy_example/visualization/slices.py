@@ -2,6 +2,7 @@
 
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.lines import Line2D
 
 from toy_example.config import SystemConfig
 from toy_example.grids.axes import nearest_axis_indices
@@ -78,6 +79,8 @@ def plot_brt(sys: SystemConfig, nominal: GridValue, robust: GridValue, thetas=(-
         _panel(ax, sys, robust.axes, v_rob, f"V robust | {theta_label(th_k)} | t={t:g}s", levels=21, cmap="RdBu", vmin=-lim, vmax=lim)
         ax.contour(nominal.axes[0], nominal.axes[1], v_nom.T, levels=[0], colors="k", linestyles="--", linewidths=1.2)
         ax.contour(robust.axes[0], robust.axes[1], v_rob.T, levels=[0], colors="k", linewidths=1.5)
+        handles = [Line2D([], [], color="k", ls="--", lw=1.2), Line2D([], [], color="k", lw=1.5)]
+        ax.legend(handles, ["nominal BRT (V=0)", "robust BRT (V=0)"], loc="upper right", fontsize=8)
     fig.tight_layout()
     return fig
 
@@ -85,14 +88,16 @@ def plot_brt(sys: SystemConfig, nominal: GridValue, robust: GridValue, thetas=(-
 def plot_brt_tube(sys: SystemConfig, gv: GridValue, title: str, theta: float = 0.0, n_times: int = 6) -> plt.Figure:
     """Zero level of V(t) at several t: the BRT grows as the remaining horizon T - t grows."""
     fig, ax = plt.subplots(figsize=(10, 3.6))
-    draw_scene(ax, sys, fill=False)
+    draw_scene(ax, sys)
     ts = np.linspace(gv.times[-1], gv.times[0], n_times)
     colors = plt.cm.viridis(np.linspace(0, 1, n_times))
+    handles, labels = [], []
     for t, c in zip(ts, colors):
         v, th_k = _value_slice(gv, theta, t)
         ax.contour(gv.axes[0], gv.axes[1], v.T, levels=[0], colors=[c], linewidths=1.5)
-        ax.plot([], [], color=c, label=f"T−t={gv.times[-1] - t:.1f}s")
+        handles.append(Line2D([], [], color=c, lw=1.5))
+        labels.append(f"T−t={gv.times[-1] - t:.1f}s")
     setup_xy(ax, sys)
-    ax.legend(loc="upper left", fontsize=8, ncol=2)
+    ax.legend(handles, labels, loc="upper left", fontsize=8, ncol=2)
     ax.set_title(f"{title} | {theta_label(th_k)}")
     return fig

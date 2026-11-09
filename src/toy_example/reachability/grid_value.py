@@ -45,10 +45,13 @@ class GridValue:
 
 
 def hj_grid(cfg: Config) -> hj.Grid:
+    """Periodic θ with one node fewer than the GridInput axis, so both grids share the same θ nodes
+    (GridInput's inclusive linspace stores ±π twice; the periodic grid stores it once)."""
     s = cfg.system
+    n0, n1, n2 = cfg.grid.resolution
     return hj.Grid.from_lattice_parameters_and_boundary_conditions(
         domain=hj.sets.Box(lo=jnp.array(s.state_lo), hi=jnp.array(s.state_hi)),
-        shape=cfg.grid.resolution,
+        shape=(n0, n1, n2 - 1),
         periodic_dims=2,
     )
 
@@ -56,10 +59,11 @@ def hj_grid(cfg: Config) -> hj.Grid:
 def solve(cfg: Config, dynamics: hj.Dynamics) -> GridValue:
     grid = hj_grid(cfg)
     initial_values = jnp.asarray(failure(np.asarray(grid.states), cfg.system), dtype=jnp.float32)
+    v_min = float(jnp.min(initial_values))  # precomputed: XLA would otherwise constant-fold it every step
     settings = hj.SolverSettings.with_accuracy(
         "very_high",
         hamiltonian_postprocessor=hj.solver.backwards_reachable_tube,
-        value_postprocessor=lambda t, v: jnp.clip(v, jnp.min(initial_values), None),
+        value_postprocessor=lambda t, v: jnp.clip(v, v_min, None),
     ).replace(artificial_dissipation_scheme=hj.artificial_dissipation.local_lax_friedrichs, CFL_number=0.75)
 
     times = np.linspace(cfg.system.time_horizon, 0.0, TIME_STEPS)
@@ -72,7 +76,7 @@ def solve(cfg: Config, dynamics: hj.Dynamics) -> GridValue:
 
 
 def path(cfg: Config, kind: str) -> Path:
-    return cfg.output_dir / f"grid_value_{kind}.npz"
+    return cfg.cache_dir / f"grid_value_{kind}.npz"
 
 
 def build(cfg: Config, kind: str, control: GridInput | GridSet) -> GridValue:

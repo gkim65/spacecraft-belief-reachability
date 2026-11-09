@@ -1,10 +1,15 @@
-"""Experiment configuration. Defaults reproduce rover-core's RoverDark setup."""
+"""Experiment configuration: Dubins car, one circular obstacle, MPC under perception error."""
 
 import math
-from dataclasses import asdict, dataclass, field, replace
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
-OUTPUT_ROOT = Path(__file__).resolve().parent / "outputs"
+ROOT = Path(__file__).resolve().parent
+CACHE_ROOT = ROOT / ".cache"
+OUTPUT_ROOT = ROOT / "outputs"
+
+# (x, y, θ) nodes; odd θ count puts nodes exactly at θ = 0, ±π/2, ±π
+RESOLUTION = (101, 101, 101)
 
 
 @dataclass(frozen=True)
@@ -14,26 +19,16 @@ class Circle:
     radius: float
 
 
-ROVER_DARK_OBSTACLES = (
-    Circle(3.0, 2.0, 1.0),
-    Circle(6.0, -1.0, 0.3),
-    Circle(9.0, 0.8, 0.5),
-    Circle(12.0, -1.5, 0.7),
-    Circle(14.0, 1.0, 0.4),
-    Circle(17.0, -0.5, 0.6),
-    Circle(18.5, 1.5, 0.4),
-)
-
-ONE_OBSTACLE = (Circle(10.0, 0.0, 1.0),)
+OBSTACLES = (Circle(10.0, 0.0, 2.0),)
 
 
 @dataclass(frozen=True)
 class SystemConfig:
-    speed: float = 1.0
+    speed: float = 3.0
     omega_max: float = 1.0
     state_lo: tuple[float, float, float] = (0.0, -5.0, -math.pi)
     state_hi: tuple[float, float, float] = (20.0, 5.0, math.pi)
-    obstacles: tuple[Circle, ...] = ROVER_DARK_OBSTACLES
+    obstacles: tuple[Circle, ...] = OBSTACLES
     goal: tuple[float, float] = (20.0, 0.0)
     time_horizon: float = 5.0
     error_bound: tuple[float, float, float] = (0.5, 0.5, 0.1)
@@ -54,39 +49,25 @@ class MPCConfig:
 
 @dataclass(frozen=True)
 class GridConfig:
-    resolution: tuple[int, int, int] = (100, 100, 100)
+    resolution: tuple[int, int, int] = RESOLUTION
 
 
 @dataclass(frozen=True)
 class Config:
-    tag: str = "rover_dark"
+    tag: str = "one_obstacle"
     system: SystemConfig = field(default_factory=SystemConfig)
     mpc: MPCConfig = field(default_factory=MPCConfig)
     grid: GridConfig = field(default_factory=GridConfig)
 
     @property
+    def cache_dir(self) -> Path:
+        """Intermediate stage results (GridInput, GridSet, GridValue)."""
+        return CACHE_ROOT / self.tag
+
+    @property
     def output_dir(self) -> Path:
+        """Final outcomes (figures)."""
         return OUTPUT_ROOT / self.tag
 
     def to_dict(self) -> dict:
         return asdict(self)
-
-
-def _tag(name: str, resolution: tuple[int, int, int]) -> str:
-    return name if resolution == (100, 100, 100) else f"{name}_" + "x".join(map(str, resolution))
-
-
-def rover_dark(resolution: tuple[int, int, int] = (100, 100, 100)) -> Config:
-    return Config(tag=_tag("rover_dark", resolution), grid=GridConfig(resolution))
-
-
-def one_obstacle(resolution: tuple[int, int, int] = (100, 100, 100)) -> Config:
-    return Config(tag=_tag("one_obstacle", resolution), system=SystemConfig(obstacles=ONE_OBSTACLE), grid=GridConfig(resolution))
-
-
-SCENARIOS = {"rover_dark": rover_dark, "one_obstacle": one_obstacle}
-
-
-def nominal(cfg: Config) -> Config:
-    """Same setup with zero perception error."""
-    return replace(cfg, system=replace(cfg.system, error_bound=(0.0, 0.0, 0.0)))
