@@ -86,15 +86,18 @@ def path(cfg: Config) -> Path:
     return cfg.cache_dir / "grid_set.npz"
 
 
-def build(cfg: Config, grid_input: GridInput) -> GridSet:
+def compute(cfg: Config, grid_input: GridInput) -> GridSet:
     _, e_hi = error_limits(cfg.system)
     tables = [neighbor_table(ax, e_hi[d], PERIODIC[d]) for d, ax in enumerate(grid_input.axes)]
     lower, lo_idx = _box_extremum(grid_input.values, tables, is_min=True)
     upper, hi_idx = _box_extremum(grid_input.values, tables, is_min=False)
-    gs = GridSet(lower, upper, np.stack([lo_idx, hi_idx], axis=-1).astype(np.int32), grid_input.axes)
-    meta = {"config": cfg.to_dict(), "neighbors_per_axis": [t.shape[1] for t in tables]}
-    arrays = {"lower": lower, "upper": upper, "corner_idx": gs.corner_idx}
-    cache.save(path(cfg), {**arrays, **{f"axis{d}": a for d, a in enumerate(gs.axes)}}, meta)
+    return GridSet(lower, upper, np.stack([lo_idx, hi_idx], axis=-1).astype(np.int32), grid_input.axes)
+
+
+def build(cfg: Config, grid_input: GridInput) -> GridSet:
+    gs = compute(cfg, grid_input)
+    arrays = {"lower": gs.lower, "upper": gs.upper, "corner_idx": gs.corner_idx}
+    cache.save(path(cfg), {**arrays, **{f"axis{d}": a for d, a in enumerate(gs.axes)}}, {"config": cfg.to_dict()})
     return gs
 
 

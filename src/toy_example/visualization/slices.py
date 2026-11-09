@@ -8,6 +8,7 @@ from toy_example.config import SystemConfig
 from toy_example.grids.axes import nearest_axis_indices
 from toy_example.grids.grid_input import GridInput
 from toy_example.grids.grid_set import GridSet
+from toy_example.reachability.brt_sweep import BRTSweep
 from toy_example.reachability.grid_value import GridValue
 from toy_example.systems.dubins import failure
 from toy_example.visualization.common import draw_scene, setup_xy, theta_label
@@ -100,4 +101,31 @@ def plot_brt_tube(sys: SystemConfig, gv: GridValue, title: str, theta: float = 0
     setup_xy(ax, sys)
     ax.legend(handles, labels, loc="upper left", fontsize=8, ncol=2)
     ax.set_title(f"{title} | {theta_label(th_k)}")
+    return fig
+
+
+def plot_brt_sweep(sys: SystemConfig, sw: BRTSweep, horizons=(0.0, 1.0, 2.0, 3.0, 4.0, 5.0)) -> plt.Figure:
+    """BRT {V < 0} for each error scale (rows) and remaining horizon T - t (columns)."""
+    T = sw.times[-1]
+    fig, axs = plt.subplots(len(sw.scales), len(horizons), figsize=(3.2 * len(horizons), 1.9 * len(sw.scales)),
+                            sharex=True, sharey=True, squeeze=False)
+    for i, s in enumerate(sw.scales):
+        for j, h in enumerate(horizons):
+            ax = axs[i, j]
+            v = sw.value_slice(i, T - h).T
+            ax.contourf(sw.axes[0], sw.axes[1], v, levels=[v.min() - 1, 0], colors=["tab:purple"], alpha=0.3)
+            ax.contour(sw.axes[0], sw.axes[1], v, levels=[0], colors=["tab:purple"], linewidths=1)
+            draw_scene(ax, sys)
+            setup_xy(ax, sys)
+            ax.set_xlabel("")
+            ax.set_ylabel("")
+            if i == 0:
+                ax.set_title(f"T−t = {h:g} s")
+            if j == 0:
+                ax.set_ylabel(f"s = {s:g}")
+    e = sys.error_bound
+    fig.suptitle(f"Robust BRT with error bound s·E, E = ±({e[0]:g},{e[1]:g},{e[2]:g}) | {theta_label(sw.theta)}")
+    fig.supxlabel("remaining horizon T − t")
+    fig.supylabel("error scale s")
+    fig.tight_layout(rect=(0.015, 0, 1, 1))
     return fig

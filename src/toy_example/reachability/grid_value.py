@@ -56,23 +56,32 @@ def hj_grid(cfg: Config) -> hj.Grid:
     )
 
 
-def solve(cfg: Config, dynamics: hj.Dynamics) -> GridValue:
-    grid = hj_grid(cfg)
-    initial_values = jnp.asarray(failure(np.asarray(grid.states), cfg.system), dtype=jnp.float32)
+def _settings(initial_values) -> hj.SolverSettings:
     v_min = float(jnp.min(initial_values))  # precomputed: XLA would otherwise constant-fold it every step
-    settings = hj.SolverSettings.with_accuracy(
+    return hj.SolverSettings.with_accuracy(
         "very_high",
         hamiltonian_postprocessor=hj.solver.backwards_reachable_tube,
         value_postprocessor=lambda t, v: jnp.clip(v, v_min, None),
     ).replace(artificial_dissipation_scheme=hj.artificial_dissipation.local_lax_friedrichs, CFL_number=0.75)
 
-    times = np.linspace(cfg.system.time_horizon, 0.0, TIME_STEPS)
-    values = hj.solve(settings, dynamics, grid, times, initial_values, progress_bar=True)
-    grad_fn = jax.jit(lambda v: grid.grad_values(v, settings.upwind_scheme))
-    gradients = np.stack([np.asarray(grad_fn(v)) for v in tqdm(values, desc="gradients")])
 
+def solve_values(cfg: Config, dynamics: hj.Dynamics, progress_bar: bool = True) -> tuple[np.ndarray, np.ndarray, list[np.ndarray]]:
+    """Values (T, n0, n1, n2) and times, both ascending in t, plus the grid axes; no gradients."""
+    grid = hj_grid(cfg)
+    initial_values = jnp.asarray(failure(np.asarray(grid.states), cfg.system), dtype=jnp.float32)
+    times = np.linspace(cfg.system.time_horizon, 0.0, TIME_STEPS)
+    values = hj.solve(_settings(initial_values), dynamics, grid, times, initial_values, progress_bar=progress_bar)
     axes = [np.asarray(c) for c in grid.coordinate_vectors]
-    return GridValue(np.asarray(values)[::-1].copy(), gradients[::-1].copy(), times[::-1].copy(), axes)
+    return np.asarray(values)[::-1].copy(), times[::-1].copy(), axes
+
+
+def solve(cfg: Config, dynamics: hj.Dynamics) -> GridValue:
+    values, times, axes = solve_values(cfg, dynamics)
+    grid = hj_grid(cfg)
+    upwind = _settings(values[0]).upwind_scheme
+    grad_fn = jax.jit(lambda v: grid.grad_values(v, upwind))
+    gradients = np.stack([np.asarray(grad_fn(v)) for v in tqdm(values, desc="gradients")])
+    return GridValue(values, gradients, times, axes)
 
 
 def path(cfg: Config, kind: str) -> Path:
