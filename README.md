@@ -97,12 +97,18 @@ custom = ConjunctionScenario(
 `notebooks/01_conjunction_scenarios.ipynb` plots all three presets. It is committed
 without outputs, so run it locally to see the figures.
 
+## Toy example
+
+`src/toy_example/` reproduces the RoVer-CoRe pipeline on a Dubins car; see its
+[README](src/toy_example/README.md).
+
 ## Setup
 
 The project needs Python ≥ 3.14 and [uv](https://docs.astral.sh/uv/).
 
 ```bash
-uv sync                 # create .venv from uv.lock
+uv sync                 # create .venv from uv.lock (CPU JAX)
+uv sync --extra cuda    # Linux + NVIDIA GPU: CUDA JAX instead
 uv run pytest           # run the test suite
 uv run ruff check .     # lint
 ```
